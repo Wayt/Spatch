@@ -9,11 +9,11 @@ import (
 	"net"
 )
 
-var hosts = []string{"37.187.238.132"}
-
 var bind = flag.String("bind", ":8080", "SSH bind address")
 var rsaKey = flag.String("rsa_key", "keys/ssh_host_rsa_key", "RSA key path")
 var dsaKey = flag.String("dsa_key", "keys/ssh_host_dsa_key", "DSA key path")
+var privateKey = flag.String("ssh_key", "keys/id_rsa", "RSA private key path")
+var endpointsFile = flag.String("endpts", "endpoints.yml", "Endpoints configuration file")
 
 var config = &ssh.ServerConfig{
 	NoClientAuth: false,
@@ -66,6 +66,9 @@ func main() {
 
 	log.Println("Read host keys...")
 	readHostKeys()
+
+	log.Println("Load endpoints...")
+	loadEndpoints(*endpointsFile)
 
 	log.Println("running spatch on", *bind)
 

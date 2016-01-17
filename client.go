@@ -5,11 +5,11 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 	"log"
-	"strconv"
+	"net"
 )
 
 const (
-	TERM_PROMPT    = ">"
+	TERM_PROMPT    = "spatch > "
 	MSG_BUFFER     = 50
 	MAX_MSG_LENGTH = 512
 )
@@ -20,6 +20,7 @@ type Client struct {
 	termWidth  int
 	termHeight int
 	msg        chan string
+	client     *ssh.Client
 }
 
 func NewClient(sshConn *ssh.ServerConn) *Client {
@@ -91,31 +92,34 @@ func (c *Client) handleShell(channel ssh.Channel) {
 	}()
 
 	c.Send("Welcome to Spatch !")
-	c.Send("Choose a server:")
-
-	for i, host := range hosts {
-		c.Send(fmt.Sprintf("\t(%d) %s", i, host))
-	}
-
 	for {
+
+		c.term.SetPrompt(TERM_PROMPT)
+		c.Send("Choose a server:")
+
+		for i, host := range endpoints {
+			c.Send(fmt.Sprintf("\t(%d) %s", i, host.Host))
+		}
+
 		line, err := c.term.ReadLine()
 		if err != nil {
-			break
+			c.Send(err.Error())
+			return
 		}
 		log.Println("received:", line)
 
-		num, err := strconv.ParseInt(line, 10, 32)
-		if err != nil {
-			c.Send(err.Error())
-			continue
-		}
-
-		if num < 0 || int(num) >= len(hosts) {
+		host, ok := getEndpoint(line)
+		if !ok {
 			c.Send("invalid choice")
 			continue
 		}
 
-		c.Send("connecting to " + hosts[num])
+		c.Send("connecting to " + host.Host)
+		if err := c.connectTo(host); err != nil {
+			log.Println("connectTo error:", err)
+			c.Send(err.Error())
+			return
+		}
 	}
 }
 
@@ -174,4 +178,37 @@ func (c *Client) handleChans(channels <-chan ssh.NewChannel) {
 			}
 		}
 	}
+}
+
+func (c *Client) connectTo(e Endpoint) error {
+
+	addr := fmt.Sprintf("%s:%s", e.Host, e.Port)
+
+	// Open TCP connection
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return err
+	}
+
+	config := &ssh.ClientConfig{
+		User: e.User,
+		Auth: []ssh.AuthMethod{readSshPrivateKey()},
+	}
+
+	sshConn, chans, reqs, err := ssh.NewClientConn(conn, addr, config)
+	if err != nil {
+		return err
+	}
+	c.client = ssh.NewClient(sshConn, chans, reqs)
+
+	c.term.SetPrompt("")
+
+	session, err := NewSession(c)
+	if err != nil {
+		c.Send(err.Error())
+		return err
+	}
+
+	return session.Wait()
+
 }
