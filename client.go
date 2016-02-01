@@ -15,6 +15,7 @@ const (
 )
 
 type Client struct {
+	User       User
 	conn       *ssh.ServerConn
 	term       *terminal.Terminal
 	termWidth  int
@@ -26,6 +27,7 @@ type Client struct {
 func NewClient(sshConn *ssh.ServerConn) *Client {
 
 	return &Client{
+		User: users[sshConn.User()],
 		conn: sshConn,
 		term: nil,
 		msg:  make(chan string, MSG_BUFFER),
@@ -97,8 +99,8 @@ func (c *Client) handleShell(channel ssh.Channel) {
 		c.term.SetPrompt(TERM_PROMPT)
 		c.Send("Choose a server:")
 
-		for i, host := range endpoints {
-			c.Send(fmt.Sprintf("\t(%d) %s", i, host.Host))
+		for i, host := range c.User.AuthorizedEndpoints() {
+			c.Send(fmt.Sprintf("\t(%d) %s@%s", i, host.User, host.Host))
 		}
 
 		line, err := c.term.ReadLine()

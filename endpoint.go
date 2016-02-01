@@ -8,9 +8,13 @@ import (
 )
 
 type Endpoint struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
-	User string `yaml:"user"`
+	Host   string `yaml:"host"`
+	Port   string `yaml:"port"`
+	User   string `yaml:"user"`
+	Access struct {
+		Users  []string `yaml:users`
+		Groups []string `yaml:groups`
+	} `yaml:access`
 }
 
 var endpoints = []Endpoint{}
@@ -50,4 +54,23 @@ func getEndpoint(i string) (Endpoint, bool) {
 	}
 
 	return endpoints[int(num)], true
+}
+
+func (e Endpoint) AuthorizedFor(u User) bool {
+
+	for _, authorized := range e.Access.Users {
+		if authorized == u.Name {
+			return true
+		}
+	}
+
+	for _, authorized := range e.Access.Groups {
+		for _, group := range u.Groups {
+			if authorized == group {
+				return true
+			}
+		}
+	}
+
+	return false
 }
