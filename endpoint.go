@@ -34,6 +34,7 @@ func loadEndpoints(filepath string) error {
 		return err
 	}
 
+	endpoints = nil
 	if err := yaml.Unmarshal(data, &endpoints); err != nil {
 		return err
 	}

@@ -7,6 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 var bind = flag.String("bind", ":8080", "SSH bind address")
@@ -69,6 +72,17 @@ func readHostKeys() {
 	}
 }
 
+var sighup = make(chan os.Signal, 1)
+
+func loadConfig() {
+
+	log.Println("Load endpoints...")
+	loadEndpoints(*endpointsFile)
+
+	log.Println("Load users...")
+	loadUsers(*usersFile)
+}
+
 func main() {
 
 	flag.Parse()
@@ -76,13 +90,20 @@ func main() {
 	log.Println("Read host keys...")
 	readHostKeys()
 
-	log.Println("Load endpoints...")
-	loadEndpoints(*endpointsFile)
-
-	log.Println("Load users...")
-	loadUsers(*usersFile)
-
 	openLogFile(*commandLogFile)
+
+	loadConfig()
+
+	// register signal handler
+	signal.Notify(sighup, syscall.SIGHUP)
+
+	go func() {
+		for range sighup {
+
+			log.Println("Re-loading configuration")
+			loadConfig()
+		}
+	}()
 
 	log.Println("running spatch on", *bind)
 

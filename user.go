@@ -17,7 +17,7 @@ type User struct {
 	AuthorizedKeys []string `yaml:"authorized_keys"`
 }
 
-var users = map[string]User{}
+var users map[string]User
 
 func loadUsers(filepath string) error {
 
@@ -31,6 +31,7 @@ func loadUsers(filepath string) error {
 		return err
 	}
 
+	users = make(map[string]User)
 	for _, u := range usersArray {
 		users[u.Name] = u
 	}
