@@ -205,7 +205,7 @@ func (c *Client) connectTo(e Endpoint) error {
 
 	c.term.SetPrompt("")
 
-	session, err := NewSession(c)
+	session, err := NewSession(c, fmt.Sprintf("%s@%s", e.User, addr))
 	if err != nil {
 		c.Send(err.Error())
 		return err

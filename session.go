@@ -10,9 +10,11 @@ import (
 type Session struct {
 	*ssh.Session
 	closed bool
+	c      *Client
+	Addr   string
 }
 
-func NewSession(c *Client) (*Session, error) {
+func NewSession(c *Client, addr string) (*Session, error) {
 
 	// Each ClientConn can support multiple interactive sessions,
 	// represented by a Session.
@@ -25,6 +27,8 @@ func NewSession(c *Client) (*Session, error) {
 	session := &Session{
 		sshSession,
 		false,
+		c,
+		addr,
 	}
 
 	if err := session.pipeToTerm(c.term); err != nil {
@@ -135,6 +139,8 @@ func (s *Session) InPipe(term *terminal.Terminal) error {
 				log.Println("term.ReadLine:", err)
 				return
 			}
+
+			CMDLogln(s.c.User.Name, s.Addr, line)
 
 			if _, err := in.Write([]byte(line + "\n")); err != nil {
 				log.Println("term.ReadLine:", err)

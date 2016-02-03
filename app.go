@@ -15,13 +15,13 @@ var dsaKey = flag.String("dsa_key", "keys/ssh_host_dsa_key", "DSA key path")
 var privateKey = flag.String("ssh_key", "keys/id_rsa", "RSA private key path")
 var endpointsFile = flag.String("endpts", "endpoints.yml", "Endpoints configuration file")
 var usersFile = flag.String("users", "users.yml", "Users configuration file")
-var authorizedKeysFile = flag.String("authorized_keys", "keys/authorized_keys", "Authorized keys configuration file")
+var commandLogFile = flag.String("cmd_log", "stdout", "Commands log file")
 
 var config = &ssh.ServerConfig{
 	NoClientAuth: false,
 	PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
 
-		if !authUser(c.User(), string(pass)) {
+		if !authUserPassword(c.User(), string(pass)) {
 			return nil, fmt.Errorf("password rejected for %q", c.User())
 		}
 
@@ -29,7 +29,7 @@ var config = &ssh.ServerConfig{
 	},
 	PublicKeyCallback: func(c ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
 
-		if !validatePublicKey(key) {
+		if !authUserPublicKey(c.User(), key) {
 			return nil, fmt.Errorf("ssh key rejected for %q", c.User())
 		}
 		return nil, nil
@@ -82,8 +82,7 @@ func main() {
 	log.Println("Load users...")
 	loadUsers(*usersFile)
 
-	log.Println("Load authorized keys...")
-	loadAuthorizedKeys(*authorizedKeysFile)
+	openLogFile(*commandLogFile)
 
 	log.Println("running spatch on", *bind)
 
