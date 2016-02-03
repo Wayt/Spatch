@@ -2,3 +2,6 @@ tmp
 *.swp
 keys
 endpoints.yml
+users.yml
+*.log
+spatch.deb

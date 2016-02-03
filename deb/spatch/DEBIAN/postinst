@@ -1,0 +1,28 @@
+#!/bin/sh
+
+USER=spatch
+
+getent passwd $USER > /dev/null
+if [ ! $? -eq 0 ]; then
+    adduser --system $USER
+fi
+
+# /bin/systemctl daemon-reload
+
+# Keys directory
+mkdir -p /etc/spatch/keys
+
+# Setup ssh keys
+if [ ! -f /etc/spatch/keys/ssh_host_rsa_key ]; then
+	ssh-keygen -t rsa -b 4096 -f /etc/spatch/keys/ssh_host_rsa_key -N '' -q
+fi
+
+if [ ! -f /etc/spatch/keys/ssh_host_dsa_key ]; then
+	ssh-keygen -t dsa -b 1024 -f /etc/spatch/keys/ssh_host_dsa_key -N '' -q
+fi
+
+if [ ! -f /etc/spatch/keys/id_rsa ]; then
+	ssh-keygen -t rsa -b 4096 -f /etc/spatch/keys/id_rsa -N '' -q
+fi
+
+/etc/init.d/spatch restart

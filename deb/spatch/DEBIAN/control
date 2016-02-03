@@ -1,0 +1,9 @@
+Package: spatch
+Version: 1.0
+Section: devel
+Priority: standard
+Architecture: amd64
+Depends: openssh-client
+Maintainer: Maxime <max@wayt.me>
+Description: Spatch SSH Proxy
+Homepage: https://github.com/wayt/spatch
