@@ -124,6 +124,13 @@ func main() {
 
 func handle(conn net.Conn) {
 
+	defer func() {
+
+		if err := recover(); err != nil {
+			log.Println("handle: recover:", err)
+		}
+	}()
+
 	defer conn.Close()
 
 	sshConn, chans, reqs, err := ssh.NewServerConn(conn, config)
